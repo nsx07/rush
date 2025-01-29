@@ -1,7 +1,7 @@
 {
   "name": "@nsx07/rush",
   "version": "1.0.0",
-  "description": "Uma biblioteca de cache com memoização e rastreamento.",
+  "description": "RUSH - Memoization with Persistent Caching 🚀",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -13,6 +13,13 @@
     "memoize",
     "typescript"
   ],
+  "bugs": {
+    "url": "https://github.com/nsx07/rush/issues"
+  },
+  "homepage": "https://github.com/nsx07/rush",
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "nsx07",
   "license": "MIT",
   "dependencies": {
