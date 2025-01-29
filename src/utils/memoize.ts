@@ -1,15 +1,15 @@
 import { CacheTool, ProviderStorage } from "../utils/cache-tool";
 
 /**
- * Opções de configuração da memoização.
- * @property key Chave de identificação do cache (quando ocultado, é feito um hash dos paramêtros e nome do método).
- * @property ttl Tempo máximo de vida do cache (em ms).
- * @property provider Provedor de armazenamento do cache.
+ * Memoization configuration options.
+ * @property key Cache identification key (when omitted, a hash of the method name and parameters is used).
+ * @property ttl Maximum cache lifetime (in milliseconds).
+ * @property provider Cache storage provider.
  */
 export type MemoizeOptions = {
   key?: string;
   /**
-   * Tempo máximo de vida do cache (em ms).
+   * Maximum cache lifetime (in milliseconds).
    * @see TTLCommon
    */
   ttl?: number;
@@ -17,11 +17,11 @@ export type MemoizeOptions = {
 };
 
 /**
- * Decorator que memoiza o resultado de um método, armazenando o resultado em cache
- * para evitar a execução repetida do método com os mesmos parâmetros.
- * APENAS UTILIZE EM MÉTODOS QUE RETORNEM DADOS SERIALIZÁVEIS.
- * @param options Opções de configuração da memoização.
- * @returns O método decorado.
+ * Decorator that memoizes the result of a method, storing the result in cache
+ * to avoid repeated execution of the method with the same parameters.
+ * ONLY USE ON METHODS THAT RETURN SERIALIZABLE DATA.
+ * @param options Memoization configuration options.
+ * @returns The decorated method.
  */
 function Memoize(options?: Partial<MemoizeOptions>): MethodDecorator;
 function Memoize(
@@ -33,51 +33,73 @@ function Memoize(
   arg2?: Partial<MemoizeOptions>
 ): MethodDecorator {
   const options = typeof arg1 === "string" ? arg2 : arg1;
-  const sigla = typeof arg1 === "string" ? arg1 : undefined;
+  const customKey = typeof arg1 === "string" ? arg1 : undefined;
 
-  return function (target: Function, method: string, descriptor: any) {
+  return function (
+    target: any,
+    methodName: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = function (...args: any[]) {
       const hashParams = btoa(
         args.map((arg) => JSON.stringify(arg)).join("_")
       ).slice(0, 10);
-      const key = `${target.constructor.name}-${method}-${
-        options?.key || sigla || hashParams
+      const cacheKey = `${target.constructor.name}-${methodName}-${
+        options?.key || customKey || hashParams
       }`;
       const maxAge = options?.ttl || 0;
       const provider = options?.provider || "session";
-      const cacheKey = `${key}`;
       const cacheTool = CacheTool.getInstance("memoize-cache", provider);
 
+      // Check if the cache exists
       const cached = cacheTool.get(cacheKey);
       if (cached) {
         const { value, timestamp } = cached;
         const now = Date.now();
 
+        // Check if the cache is still valid
         if (!maxAge || now - timestamp < maxAge) {
-          return value;
+          return value; // Return cached value
         } else {
-          cacheTool.remove(cacheKey);
+          cacheTool.remove(cacheKey); // Remove expired cache
         }
       }
 
-      const value = await originalMethod.apply(this, args);
-      cacheTool.put(cacheKey, { value, timestamp: Date.now() });
+      // Execute the original method
+      const result = originalMethod.apply(this, args);
 
-      return value;
+      // Handle both synchronous and asynchronous methods
+      if (result instanceof Promise) {
+        // If the method is asynchronous, cache the resolved value
+        return result.then((resolvedValue) => {
+          cacheTool.put(cacheKey, {
+            value: resolvedValue,
+            timestamp: Date.now(),
+          });
+          return resolvedValue;
+        });
+      } else {
+        // If the method is synchronous, cache the result directly
+        cacheTool.put(cacheKey, { value: result, timestamp: Date.now() });
+        return result;
+      }
     };
 
     return descriptor;
-  } as any;
+  } as MethodDecorator;
 }
 
 export { Memoize };
 
+/**
+ * Common TTL (Time to Live) values in milliseconds.
+ */
 export enum TTLCommon {
-  UM_MINUTO = 60000,
-  CINCO_MINUTOS = 300000,
-  DEZ_MINUTOS = 600000,
-  MEIA_HORA = 1800000,
-  UMA_HORA = 3600000,
+  ONE_MINUTE = 60000,
+  FIVE_MINUTES = 300000,
+  TEN_MINUTES = 600000,
+  HALF_HOUR = 1800000,
+  ONE_HOUR = 3600000,
 }
