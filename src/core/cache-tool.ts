@@ -1,3 +1,5 @@
+import { ProviderStorage } from "./types/provider-storage";
+
 function Track(flush = false): MethodDecorator {
   return function (target: any, key: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
@@ -14,8 +16,6 @@ function Track(flush = false): MethodDecorator {
     return descriptor;
   } as any;
 }
-
-export type ProviderStorage = "session" | "local";
 
 /**
  * Singleton class to manage cache in session or local storage
