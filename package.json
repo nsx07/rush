@@ -1,6 +1,6 @@
 {
   "name": "@nsx07/rush",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "RUSH - Memoization with Persistent Caching 🚀",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
