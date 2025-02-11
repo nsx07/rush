@@ -25,7 +25,7 @@
   },
   "author": "nsx07",
   "license": "MIT",
-  "dependencies": {
+  "devDependencies": {
     "typescript": "^4.0.0"
   }
 }

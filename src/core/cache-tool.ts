@@ -4,11 +4,10 @@ function Track(flush = false): MethodDecorator {
   return function (target: any, key: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
     descriptor.value = function (...args: any[]) {
-      const instance = CacheTool.getInstance();
       const value = originalMethod.apply(this, args);
 
       if (flush) {
-        instance.saveCache();
+        CacheTool.getInstance().saveCache();
       }
 
       return value;
